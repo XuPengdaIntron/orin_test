@@ -26,5 +26,8 @@ obj-$(CONFIG_NV_DESER_MAX96712) += max96712.o
 obj-$(CONFIG_NV_VIDEO_IRS2877A) += nv_irs2877a.o
 obj-$(CONFIG_NV_VIDEO_SZ220AT) += nv_sz220at.o
 obj-$(CONFIG_NV_VIDEO_IRS2877A2) += nv_irs2877a2.o
+nv_irs2877a2-y := nv_irs2877a_core.o tof_m2453/tof_m2453_i2c.o tof_m2453/tof_m2453_spi.o \
+	tof_m2453/tof_m2453_zwe.o tof_m2453/tof_m2453_core.o  \
+	tof_m2453/tof_m2453_regs.o
 obj-$(CONFIG_NV_VIDEO_SZ220AT2) += nv_sz220at2.o
 obj-$(CONFIG_NV_VIDEO_ISX031) += nv_isx031.o

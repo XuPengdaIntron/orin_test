@@ -33,6 +33,7 @@
 #include <linux/init.h>
 #include <linux/kmod.h>
 #include <linux/delay.h> 
+#include "tof_m2453/tof_m2453.h"
 
 #if 0
 uint8_t irs2877a_init_setting[] = {
@@ -186,6 +187,7 @@ struct irs2877a {
 	u32	frame_length;
 	struct camera_common_data	*s_data;
 	struct tegracam_device		*tc_dev;
+	struct tof_m2453 			tof;
 };
 
 #if 1
@@ -508,16 +510,28 @@ int sensor_init(struct irs2877a *priv);
 
 static int irs2877a_set_mode(struct tegracam_device *tc_dev)
 {
-	#ifdef USE_SENSOR_INIT
 	int err = 0;
-	#endif
 	struct device *dev = tc_dev->dev;
-	#ifdef USE_SENSOR_INIT
 	struct irs2877a *priv = (struct irs2877a *)tegracam_get_privdata(tc_dev);
-	#endif
-	
-	dev_info(dev, "irs2877a_set_mode111.\n");
-	
+	struct tof_m2453 * tof = &priv->tof;
+	struct camera_common_data *s_data = tc_dev->s_data;
+	int mode_idx = s_data->mode_prop_idx;
+
+	int usecase_idx = tof_m2453_find_usecase(tof, "Mode9_60Mhz_80Mhz_30fps");
+	if (usecase_idx < 0) {
+		dev_err(dev, "Failed to find usecase\n");
+		return -EINVAL;
+	}
+
+	dev_info(dev, "irs2877a_set_mode:mode_idx=%d, usecase_idx=%d.\n", mode_idx, usecase_idx);
+
+	err = tof_m2453_set_usecase(tof, usecase_idx);
+	if (err) 
+	{
+		dev_err(dev, "Failed to set usecase\n");
+		return err;
+	}
+
 	#ifdef USE_SENSOR_INIT
 	err = sensor_init(priv);
 	if (err) 
@@ -574,10 +588,21 @@ static int irs2877a_start_streaming(struct tegracam_device *tc_dev)
 {
 	int err=0;
 	struct device *dev = tc_dev->dev;
-	//struct irs2877a *priv = (struct irs2877a *)tegracam_get_privdata(tc_dev);
+	struct irs2877a *priv = (struct irs2877a *)tegracam_get_privdata(tc_dev);
 	//struct camera_common_data *s_data = priv->s_data;
 	
 	dev_info(dev, "irs2877a_start_streaming.\n");
+
+	msleep(500);
+
+	err = tof_m2453_start_capture(&priv->tof);
+	if (err) 
+	{
+		dev_err(dev, "Failed to start capture\n");
+		return err;
+	}
+
+	msleep(500);
 	
 	err = sensor_start(tc_dev);
 
@@ -587,8 +612,15 @@ static int irs2877a_start_streaming(struct tegracam_device *tc_dev)
 static int irs2877a_stop_streaming(struct tegracam_device *tc_dev)
 {
 	int err=0;
+	struct irs2877a *priv = (struct irs2877a *)tegracam_get_privdata(tc_dev);
 	struct device *dev = tc_dev->dev;
 	dev_info(dev, "irs2877a_stop_streaming.\n");
+
+	err = tof_m2453_stop_capture(&priv->tof);
+	if (err) 
+	{
+		dev_err(dev, "Failed to stop capture\n");
+	}
 	
 	err = sensor_stop(tc_dev);
 	
@@ -709,6 +741,7 @@ int sensor_init(struct irs2877a *priv)
 static int irs2877a_probe(struct i2c_client *client,
 			const struct i2c_device_id *id)
 {
+	struct tof_m2453 *tof;
 	struct device *dev = &client->dev;
 	struct device_node *node = dev->of_node;
 	struct tegracam_device *tc_dev;
@@ -727,6 +760,39 @@ static int irs2877a_probe(struct i2c_client *client,
 		dev_err(dev, "unable to allocate memory!\n");
 		return -ENOMEM;
 	}
+
+	tof = &priv->tof;
+	tof->regs = tof_m2453_regs_by_name("irs2877a");
+	tof->dev = dev;
+	tof->client = client;
+	// tof->ops = dev_get_platdata(&client->dev);
+	// if (!tof->ops || !tof->ops->set_reset) {
+	// 	dev_err(&client->dev, "no board glue (reset callback) provided\n");
+	// 	return -ENODEV;
+	// }
+
+	err = tof_m2453_init_state(tof);
+	if (err)
+	{
+		dev_err(&client->dev, "tof_m2453_init_state failed: %d\n", err);
+		return err;
+	}
+
+	/* reset + SPI + small tables + the cached use case blocks */
+	err = tof_m2453_probe_config(tof);
+	if (err) 
+	{
+		dev_err(&client->dev, "module configuration read failed: %d\n", err);
+		return EINVAL;
+	}
+
+	err = tof_m2453_bring_up(tof);
+	if (err) 
+	{
+		dev_err(&client->dev, "imager bring-up failed: %d\n", err);
+		return  err;
+	}
+
 	tc_dev = devm_kzalloc(dev,
 			sizeof(struct tegracam_device), GFP_KERNEL);
 	if (!tc_dev)
