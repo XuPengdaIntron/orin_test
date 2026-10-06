@@ -511,13 +511,27 @@ int sensor_init(struct irs2877a *priv);
 static int irs2877a_set_mode(struct tegracam_device *tc_dev)
 {
 	int err = 0;
+	int usecase_idx = 0;
 	struct device *dev = tc_dev->dev;
 	struct irs2877a *priv = (struct irs2877a *)tegracam_get_privdata(tc_dev);
 	struct tof_m2453 * tof = &priv->tof;
 	struct camera_common_data *s_data = tc_dev->s_data;
 	int mode_idx = s_data->mode_prop_idx;
+	char * usecase_name = NULL;
 
-	int usecase_idx = tof_m2453_find_usecase(tof, "Mode9_60Mhz_80Mhz_30fps");
+	switch (mode_idx) {
+	case 0:
+		usecase_name = "Mode9_60Mhz_80Mhz_30fps";
+		break;
+	case 1:
+		usecase_name = "Mode5_80Mhz_30fps";
+		break;
+	default:
+		dev_err(dev, "Invalid mode index %d\n", mode_idx);
+		return -EINVAL;
+	}
+
+	usecase_idx = tof_m2453_find_usecase(tof, usecase_name);
 	if (usecase_idx < 0) {
 		dev_err(dev, "Failed to find usecase\n");
 		return -EINVAL;

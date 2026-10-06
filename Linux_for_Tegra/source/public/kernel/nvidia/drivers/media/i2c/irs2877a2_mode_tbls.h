@@ -1,5 +1,5 @@
 /*
- * imx390c_mode_tbls.h - imx390c sensor mode tables
+ * irs2877a2_mode_tbls.h - irs2877a2 sensor mode tables
  *
  * Copyright (c) 2018-2019, NVIDIA CORPORATION.  All rights reserved.
  *
@@ -33,7 +33,8 @@
 
 
 enum {
-	IRS2877A_MODE_640X1205_CROP_30FPS,
+	IRS2877A_MODE_640X2169_Mode9_60Mhz_80Mhz_30fps,
+	IRS2877A_MODE_640X1205_Mode5_80Mhz_30fps,
 	IRS2877A_MODE_START_STREAM,
 	IRS2877A_MODE_STOP_STREAM,
 };
@@ -51,6 +52,7 @@ static const int irs2877a_120fps[] = {
 };
 
 static const struct camera_common_frmfmt irs2877a_frmfmt[] = {
-	{{640, 2169}, irs2877a_30fps, 1, 0, IRS2877A_MODE_640X1205_CROP_30FPS},
+	{{640, 2169}, irs2877a_30fps, 1, 0, IRS2877A_MODE_640X2169_Mode9_60Mhz_80Mhz_30fps},
+	{{640, 1205}, irs2877a_30fps, 1, 0, IRS2877A_MODE_640X1205_Mode5_80Mhz_30fps},
 };
 #endif /* __IRS2877A2_I2C_TABLES__ */
