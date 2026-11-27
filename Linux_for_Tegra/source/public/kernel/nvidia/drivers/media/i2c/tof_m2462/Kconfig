@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: GPL-2.0
+config TOF_M2462
+	tristate "Infineon M2462 (IRS2975C) dual-stream ToF imager"
+	depends on I2C
+	help
+	  Register and module-flash access for the Infineon M2462 ToF imager,
+	  i.e. the IRS2975C "spot" (Flood + Spot) dual-stream modules.
+
+	  The register map is the M2459/M2462 generation: the SPI bus master
+	  is at 0xA095..0xA09A and the idle flag is STATUS0 (0x940E), not the
+	  M2453/M2455/M2457 0x9403.  The driver also waits for STATUS0 before
+	  enabling the SPI controller.
+
+	  At probe time the driver reads the small Zwetschge tables (ToC,
+	  TableOfRegisterMaps, TableOfUseCases) and caches every use case's
+	  dense register block from the module's own SPI flash.  Selecting a
+	  use case then is a pure RAM -> imager I2C burst write; no userspace
+	  blob and no flash access on the hot path.
+
+	  A dual-stream use case describes two streams that arrive in
+	  alternating UVC frames.  The parser therefore exposes the raw frames
+	  of one UVC frame (9 for Hybrid_Mode18), not the 18 raw frames of the
+	  whole depth frame.
+
+	  The ~200 kB calibration blob is deliberately left to userspace
+	  (the depth engine input), it is never read by this driver.
+
+	  The i2c_driver registration at the end of tof_m2462_core.c is wrapped
+	  in #if 0 so the engine can be integrated into a board driver without
+	  registering a second i2c driver.  Remove that guard for a standalone
+	  module (and adjust the probe/remove signatures to the target kernel).
+
+	  To compile this as a module, choose M here: the module will be
+	  called tof_m2462.

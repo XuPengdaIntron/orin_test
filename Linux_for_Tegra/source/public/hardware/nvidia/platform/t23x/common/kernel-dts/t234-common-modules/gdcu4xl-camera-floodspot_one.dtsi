@@ -1,0 +1,201 @@
+/*
+ * Copyright (c) 2018-2021, NVIDIA CORPORATION.  All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/ {
+
+	 tegra-capture-vi {
+        num-channels = <1>;
+        ports {
+            #address-cells = <1>;
+            #size-cells = <0>;
+            port@0 {
+                reg = <0>;
+                floodspot_vi_in0: endpoint {
+                    vc-id = <0>;
+                    port-index = <0>;
+                    bus-width = <4>;
+                    remote-endpoint = <&floodspot_csi_out0>;
+                };
+            };
+        };
+    };
+
+    host1x@13e00000 {
+        nvcsi@15a00000 {
+            num-channels = <1>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+            channel@0 {
+                reg = <0>;
+                ports {
+                    #address-cells = <1>;
+                    #size-cells = <0>;
+                    port@0 {
+                        reg = <0>;
+                        floodspot_csi_in0: endpoint@0 {
+                            port-index = <0>;
+                            bus-width = <4>;
+                            remote-endpoint = <&floodspot_floodspot_out0>;
+                        };
+                    };
+                    port@1 {
+                        reg = <1>;
+                        floodspot_csi_out0: endpoint@1 {
+                            remote-endpoint = <&floodspot_vi_in0>;
+                        };
+                    };
+                };
+            };
+        };
+    };
+
+	i2c@3180000 {
+	
+		    floodspot_a@34 {
+			compatible = "sensing,floodspot";
+			
+			reg = <0x34>;
+
+			sensor_model ="floodspot";
+			mode0 {/*mode floodspot_Hybrid_Mode18_15fps*/
+		            mclk_khz = "24000";
+		            num_lanes = "4";
+		            tegra_sinterface = "serial_a";
+			    	phy_mode = "DPHY";
+		            vc_id = "0";
+		            discontinuous_clk = "no";
+		            dpcm_enable = "false";
+		            cil_settletime = "0";
+		            dynamic_pixel_bit_depth = "12";
+		            csi_pixel_bit_depth = "12";
+		            mode_type = "bayer";
+		            pixel_phase = "rggb";
+		            active_w = "240";
+		            active_h = "3258";
+		            readout_orientation = "0";
+		            line_length = "1000";
+		            inherent_gain = "1";
+		            pix_clk_hz = "41644800";
+		            serdes_pix_clk_hz = "400000000";
+
+		            gain_factor = "10";
+		            min_gain_val = "0"; /* dB */
+		            max_gain_val = "300"; /* dB */
+		            step_gain_val = "3"; /* 0.3 */
+		            default_gain = "0";
+		            min_hdr_ratio = "1";
+		            max_hdr_ratio = "1";
+		            framerate_factor = "1000000";
+		            min_framerate = "15000000";
+		            max_framerate = "15000000";
+		            step_framerate = "1";
+		            default_framerate = "15000000";
+		            exposure_factor = "1000000";
+		            min_exp_time = "59"; /*us, 2 lines*/
+		            max_exp_time = "33333";
+		            step_exp_time = "1";
+		            default_exp_time = "33333";/* us */
+		            embedded_metadata_height = "0";
+		        };
+
+				mode1 {/*mode Mode9_60Mhz_80Mhz_1000us_30fps*/
+		            mclk_khz = "24000";
+		            num_lanes = "4";
+		            tegra_sinterface = "serial_a";
+			    	phy_mode = "DPHY";
+		            vc_id = "0";
+		            discontinuous_clk = "no";
+		            dpcm_enable = "false";
+		            cil_settletime = "0";
+		            dynamic_pixel_bit_depth = "12";
+		            csi_pixel_bit_depth = "12";
+		            mode_type = "bayer";
+		            pixel_phase = "rggb";
+		            active_w = "240";
+		            active_h = "1629";
+		            readout_orientation = "0";
+		            line_length = "1000";
+		            inherent_gain = "1";
+		            pix_clk_hz = "41644800";
+		            serdes_pix_clk_hz = "400000000";
+
+		            gain_factor = "10";
+		            min_gain_val = "0"; /* dB */
+		            max_gain_val = "300"; /* dB */
+		            step_gain_val = "3"; /* 0.3 */
+		            default_gain = "0";
+		            min_hdr_ratio = "1";
+		            max_hdr_ratio = "1";
+		            framerate_factor = "1000000";
+		            min_framerate = "15000000";
+		            max_framerate = "30000000";
+		            step_framerate = "1";
+		            default_framerate = "30000000";
+		            exposure_factor = "1000000";
+		            min_exp_time = "59"; /*us, 2 lines*/
+		            max_exp_time = "33333";
+		            step_exp_time = "1";
+		            default_exp_time = "33333";/* us */
+		            embedded_metadata_height = "0";
+		        };
+		        
+			ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				port@0 {
+					reg = <0>;
+					floodspot_floodspot_out0: endpoint {
+						vc-id = <0>;
+						port-index = <0>;
+						bus-width = <4>;
+						remote-endpoint = <&floodspot_csi_in0>;
+					};
+				};
+			};
+		   };
+	};
+};
+
+/ {
+
+	tegra-camera-platform {
+		compatible = "nvidia, tegra-camera-platform";
+
+		/**
+		 * The general guideline for naming badge_info contains 3 parts, and is as follows,
+		 * The first part is the camera_board_id for the module; if the module is in a FFD
+		 * platform, then use the platform name for this part.
+		 * The second part contains the position of the module, ex. "rear" or "front".
+		 * The third part contains the last 6 characters of a part number which is found
+		 * in the module's specsheet from the vender.
+		 */
+		modules {
+			module0 {
+				badge = "floodspot_rear";
+				position = "rear";
+				orientation = "1";
+				drivernode0 {
+					/* Declare PCL support driver (classically known as guid)  */
+					pcl_id = "v4l2_sensor";
+					/* Driver v4l2 device name */
+					devname = "floodspot 0x34";
+					/* Declare the device-tree hierarchy to driver instance */
+					proc-device-tree = "/proc/device-tree/i2c@3180000/floodspot_a@34";
+				};
+			};
+		};
+	};
+};
